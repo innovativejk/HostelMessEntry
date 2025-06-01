@@ -1,3 +1,4 @@
+// backend/index.js
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -16,8 +17,9 @@ dotenv.config();
 
 const app = express();
 
+// Ensure FRONTEND_URL is correctly set on Render for backend service
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: process.env.FRONTEND_URL, // <--- यह ठीक है, बशर्ते Render पर Variable सही हो
   credentials: true,
 }));
 app.use(express.json());
@@ -25,19 +27,20 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const frontendBuildPath = path.join(__dirname, '..', 'dist');
+const frontendBuildPath = path.join(__dirname, '..', 'dist'); // assuming frontend's dist is one level up
 
-app.use(express.static(frontendBuildPath));
+app.use(express.static(frontendBuildPath)); // Serve static files from the 'dist' folder
 
 app.get('/api/general/active-meal', getActiveMeal);
 logger.info('General API route /api/general/active-meal initialized.');
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes); // API routes starting with /api
 app.use('/api/student', studentRoutes);
 app.use('/api/staff', staffRoutes);
 app.use('/api/admin', adminRoutes);
 logger.info('All modular routes initialized.');
 
+// Catch-all route to serve the frontend's index.html for all other requests
 app.get('*', (req, res) => {
   res.sendFile(path.resolve(frontendBuildPath, 'index.html'));
 });
@@ -56,8 +59,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  logger.info(`Server running on port ${PORT}`);
   connectDB();
 });
