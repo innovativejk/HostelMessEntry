@@ -1,6 +1,9 @@
-// src/utils/api.d.ts
-import { AxiosInstance } from 'axios';
+// src/utils/api.ts
+import axios from 'axios';
 
-declare const api: AxiosInstance;
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL,
+  withCredentials: true,
+});
 
 export default api;
