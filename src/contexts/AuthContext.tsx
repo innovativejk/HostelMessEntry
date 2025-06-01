@@ -1,6 +1,9 @@
+// src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-import axios from 'axios';
+// Import InternalAxiosRequestConfig and AxiosRequestHeaders
+import axios, { AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig, AxiosRequestHeaders } from 'axios';
 import { toast } from 'react-hot-toast';
+import api from '../utils/api'; // Import the default export
 
 interface User {
   id: number;
@@ -31,44 +34,48 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const authAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api', // <--- यह लाइन बदली गई है
-});
-
-authAxios.interceptors.request.use(
-  (config) => {
+// Interceptor setup for the 'api' instance
+api.interceptors.request.use(
+  // Use InternalAxiosRequestConfig for the config parameter
+  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = localStorage.getItem('token');
     if (token) {
+      // Ensure config.headers is initialized as AxiosRequestHeaders
+      config.headers = config.headers || {} as AxiosRequestHeaders;
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  (error: AxiosError) => { // Explicitly type error
     return Promise.reject(error);
   }
 );
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Function to fetch user details on token presence
   const fetchUser = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const response = await authAxios.get<{ user: User }>('/auth/me');
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (token) {
+        const response = await api.get<{ user: User }>('/auth/me');
         setUser(response.data.user);
         setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Failed to fetch user data:', error);
-        localStorage.removeItem('token'); // Clear invalid token
+      } else {
         setUser(null);
         setIsAuthenticated(false);
       }
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      localStorage.removeItem('token');
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -78,24 +85,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const login = async (email: string, password: string, role: string) => {
     setLoading(true);
     try {
-      const response = await authAxios.post<{ token: string; user: User }>('/auth/login', { email, password, role });
+      const response = await api.post<{ token: string; user: User }>('/auth/login', { email, password, role });
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
       setIsAuthenticated(true);
-      toast.success('Login successful!');
+      toast.success('Logged in successfully!');
     } catch (error: unknown) {
-      setIsAuthenticated(false);
       if (axios.isAxiosError(error) && error.response) {
-        const message = error.response.data.message;
-        if (message === 'PENDING_APPROVAL') {
-          throw new Error('Your account is pending admin approval. Please wait for approval before logging in.');
-        } else if (message === 'INCORRECT_PASSWORD') {
-          throw new Error('Incorrect password. Please try again.');
-        } else if (message === 'EMAIL_OR_ROLE_MISMATCH') {
-          throw new Error('No user found with the provided email and role. Please check your credentials.');
-        } else if (message === 'ACCOUNT_SUSPENDED') {
-          throw new Error('Your account has been suspended. Please contact the administrator.');
-        }
         throw new Error(error.response.data.message || 'Login failed. Please check your credentials.');
       }
       throw new Error('Network error. Please try again.');
@@ -107,7 +103,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (userData: any) => {
     setLoading(true);
     try {
-      await authAxios.post<{ message: string }>('/auth/register', {
+      // Use the 'api' instance for registration as well
+      await api.post<{ message: string }>('/auth/register', {
         ...userData,
         role: 'student',
       });
