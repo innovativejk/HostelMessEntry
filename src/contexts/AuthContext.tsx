@@ -32,15 +32,11 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const authAxios = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api', // यह आपके API बेस URL से मेल खाना चाहिए
-  withCredentials: true, // कुकीज़ भेजने/प्राप्त करने के लिए महत्वपूर्ण
+  baseURL: import.meta.env.VITE_API_URL || '/api', // <--- यह लाइन बदली गई है
 });
 
 authAxios.interceptors.request.use(
   (config) => {
-    // यदि आपका बैकएंड HttpOnly कुकीज़ पर निर्भर करता है, तो localStorage से टोकन की आवश्यकता नहीं है।
-    // यदि आपका बैकएंड JWT को रिस्पांस बॉडी में भेजता है और आप उसे localStorage में स्टोर करते हैं,
-    // तो यह आवश्यक होगा। मौजूदा कॉन्फ़िगरेशन को बनाए रखा गया है।
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -54,56 +50,53 @@ authAxios.interceptors.request.use(
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true); // प्रारंभिक लोडिंग स्थिति
+  const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // उपयोगकर्ता डेटा प्राप्त करने और प्रमाणीकरण स्थिति सेट करने के लिए फ़ंक्शन
+  // Function to fetch user details on token presence
   const fetchUser = useCallback(async () => {
-    try {
-      // बैकएंड से उपयोगकर्ता डेटा प्राप्त करने का प्रयास करें।
-      // यदि एक HttpOnly कुकी मौजूद है, तो बैकएंड इसे मान्य करेगा।
-      const response = await authAxios.get<{ user: User }>('/auth/me');
-      setUser(response.data.user);
-      setIsAuthenticated(true);
-    } catch (error) {
-      // यदि प्रमाणीकरण विफल हो जाता है (जैसे, कोई वैध कुकी नहीं, टोकन समाप्त हो गया),
-      // किसी भी लोकल स्टोरेज आइटम को साफ़ करें और उपयोगकर्ता को null पर सेट करें।
-      localStorage.removeItem('token'); // यदि आप इसे स्टोर करते हैं, तो बस मामले में
-      setUser(null);
-      setIsAuthenticated(false);
-      console.error("Failed to re-authenticate user session:", error);
-    } finally {
-      setLoading(false); // प्रमाणीकरण जांच पूरी हो गई है
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const response = await authAxios.get<{ user: User }>('/auth/me');
+        setUser(response.data.user);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to fetch user data:', error);
+        localStorage.removeItem('token'); // Clear invalid token
+        setUser(null);
+        setIsAuthenticated(false);
+      }
     }
-  }, []); // खाली निर्भरता सरणी सुनिश्चित करती है कि यह एक बार बनाई गई है
+    setLoading(false);
+  }, []);
 
-  // घटक माउंट पर प्रारंभिक प्रमाणीकरण जांच
   useEffect(() => {
     fetchUser();
-  }, [fetchUser]); // माउंट पर एक बार fetchUser को कॉल करें
+  }, [fetchUser]);
 
   const login = async (email: string, password: string, role: string) => {
     setLoading(true);
     try {
-      // बैकएंड को HttpOnly कुकी सेट करनी चाहिए और बॉडी में उपयोगकर्ता डेटा वापस कर सकता है
-      const response = await authAxios.post<{ token?: string; user: User }>('/auth/login', { email, password, role });
-
-      // यदि बैकएंड रिस्पांस बॉडी में टोकन देता है, तो उसे स्टोर करें।
-      if (response.data.token) {
-        localStorage.setItem('token', response.data.token);
-      }
-      
-      // रिस्पांस से उपयोगकर्ता डेटा सेट करें
+      const response = await authAxios.post<{ token: string; user: User }>('/auth/login', { email, password, role });
+      localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
       setIsAuthenticated(true);
       toast.success('Login successful!');
     } catch (error: unknown) {
+      setIsAuthenticated(false);
       if (axios.isAxiosError(error) && error.response) {
-        toast.error(error.response.data.message || 'Login failed. Please check your credentials.');
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Login failed. Please check your credentials.');
+        const message = error.response.data.message;
+        if (message === 'PENDING_APPROVAL') {
+          throw new Error('Your account is pending admin approval. Please wait for approval before logging in.');
+        } else if (message === 'INCORRECT_PASSWORD') {
+          throw new Error('Incorrect password. Please try again.');
+        } else if (message === 'EMAIL_OR_ROLE_MISMATCH') {
+          throw new Error('No user found with the provided email and role. Please check your credentials.');
+        } else if (message === 'ACCOUNT_SUSPENDED') {
+          throw new Error('Your account has been suspended. Please contact the administrator.');
+        }
+        throw new Error(error.response.data.message || 'Login failed. Please check your credentials.');
       }
       throw new Error('Network error. Please try again.');
     } finally {
@@ -125,11 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           const validationErrors = error.response.data.errors.map((err: { msg: string }) => err.msg).join(', ');
           throw new Error(validationErrors);
         }
-        toast.error(error.response.data.message || 'Registration failed.');
-      } else if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error('Registration failed.');
+        throw new Error(error.response.data.message || 'Registration failed.');
       }
       throw new Error('Network error. Please try again.');
     } finally {
@@ -138,7 +127,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token'); // टोकन हटा दें यदि स्टोर किया गया हो
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
     toast.success('Logged out successfully!');
