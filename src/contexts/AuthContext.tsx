@@ -1,9 +1,8 @@
 // src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
-// Import InternalAxiosRequestConfig and AxiosRequestHeaders
-import axios, { AxiosRequestConfig, AxiosError, InternalAxiosRequestConfig, AxiosRequestHeaders } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosHeaders } from 'axios'; // AxiosHeaders इम्पोर्ट करें
 import { toast } from 'react-hot-toast';
-import api from '../utils/api'; // Import the default export
+import api from '../utils/api';
 
 interface User {
   id: number;
@@ -34,64 +33,71 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Interceptor setup for the 'api' instance
 api.interceptors.request.use(
-  // Use InternalAxiosRequestConfig for the config parameter
-  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
+  (config: InternalAxiosRequestConfig) => {
     const token = localStorage.getItem('token');
     if (token) {
-      // Ensure config.headers is initialized as AxiosRequestHeaders
-      config.headers = config.headers || {} as AxiosRequestHeaders;
+      if (!config.headers) {
+        // config.headers को AxiosHeaders इंस्टेंस के रूप में इनिशियलाइज़ करें
+        config.headers = new AxiosHeaders();
+      }
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error: AxiosError) => { // Explicitly type error
+  (error: AxiosError) => {
     return Promise.reject(error);
   }
 );
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-
-  const fetchUser = useCallback(async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (token) {
-        const response = await api.get<{ user: User }>('/auth/me');
-        setUser(response.data.user);
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user:', error);
-      localStorage.removeItem('token');
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    const checkAuthStatus = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await api.get<{ user: User }>('/api/auth/me');
+          setUser(response.data.user);
+          setIsAuthenticated(true);
+        } catch (error: unknown) {
+          if (axios.isAxiosError(error)) {
+            console.error('Error fetching user data:', error);
+          }
+          localStorage.removeItem('token');
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+      setLoading(false);
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const login = async (email: string, password: string, role: string) => {
     setLoading(true);
     try {
-      const response = await api.post<{ token: string; user: User }>('/auth/login', { email, password, role });
+      const response = await api.post<{ token: string; user: User }>('/api/auth/login', {
+        email,
+        password,
+        role,
+      });
       localStorage.setItem('token', response.data.token);
       setUser(response.data.user);
       setIsAuthenticated(true);
-      toast.success('Logged in successfully!');
+      toast.success(`Welcome back, ${response.data.user.name || response.data.user.email}!`);
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {
+        if (error.response.status === 401) {
+          throw new Error('Incorrect email or password.');
+        }
+        if (error.response.status === 403) {
+            throw new Error(error.response.data.message || 'Access denied. Your account may be pending approval or suspended.');
+        }
         throw new Error(error.response.data.message || 'Login failed. Please check your credentials.');
       }
       throw new Error('Network error. Please try again.');
@@ -103,8 +109,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const register = async (userData: any) => {
     setLoading(true);
     try {
-      // Use the 'api' instance for registration as well
-      await api.post<{ message: string }>('/auth/register', {
+      await api.post<{ message: string }>('/api/auth/register', {
         ...userData,
         role: 'student',
       });
