@@ -1,7 +1,6 @@
-// backend/config/database.js
 import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
-import * as logger from '../utils/logger.js'; // Import logger
+import * as logger from '../utils/logger.js';
 
 dotenv.config();
 
@@ -20,7 +19,7 @@ export const connectDB = async () => {
     await db.query('SELECT 1');
     logger.info('✅ MySQL database connected successfully');
   } catch (error) {
-    logger.error('❌ Failed to connect to MySQL database:', error); // Pass full error object
+    logger.error('❌ Failed to connect to MySQL database:', error);
     process.exit(1);
   }
 };
