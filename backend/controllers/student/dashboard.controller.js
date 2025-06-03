@@ -30,8 +30,8 @@ const getActiveMealType = () => {
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes(); 
     console.log('Server Date/Time (Full):', now.toISOString()); // ISO format for clarity
-    console.log('Server Time (Hour:Minute):', now.getHours(), ':', now.getMinutes());
-
+    console.log('Server Time (Hour:Minute):', currentHour, ':', currentMinute);
+    console.log('Timezone Offset (minutes):', now.getTimezoneOffset()); // Add this for timezone info
     // अपने वास्तविक मेस टाइमिंग के अनुसार इन समयों को समायोजित करें
     // उदाहरण: Breakfast (7:00 AM - 10:30 AM), Lunch (12:00 PM - 3:30 PM), Dinner (7:00 PM - 11:30 PM)
 
