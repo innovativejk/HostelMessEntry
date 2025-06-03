@@ -24,15 +24,35 @@ const QR_CODE_EXPIRY_MINUTES = 5;
 
 const messPlanServiceInstance = MessPlanService;
 
+// REVISED getActiveMealType function for better precision
 const getActiveMealType = () => {
     const now = new Date();
     const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
 
-    if (currentHour >= 7 && currentHour < 10) {
+    // Define meal times with more precision (e.g., breakfast ends at 10:30 AM, lunch ends at 3:30 PM, dinner ends at 11:30 PM)
+    // You can adjust these times based on your actual mess schedule
+    // A small buffer could be added if needed, e.g., allowing for 15-30 mins after official end time for scanning
+
+    // Breakfast window: 7:00 AM to 10:30 AM (inclusive of 7:00, exclusive of 10:30)
+    if (
+        (currentHour > 7 || (currentHour === 7 && currentMinute >= 0)) &&
+        (currentHour < 10 || (currentHour === 10 && currentMinute < 30))
+    ) {
         return 'breakfast';
-    } else if (currentHour >= 12 && currentHour < 15) {
+    }
+    // Lunch window: 12:00 PM to 3:30 PM (inclusive of 12:00, exclusive of 15:30)
+    else if (
+        (currentHour > 12 || (currentHour === 12 && currentMinute >= 0)) &&
+        (currentHour < 15 || (currentHour === 15 && currentMinute < 30))
+    ) {
         return 'lunch';
-    } else if (currentHour >= 19 && currentHour < 23) {
+    }
+    // Dinner window: 7:00 PM to 11:30 PM (inclusive of 19:00, exclusive of 23:30)
+    else if (
+        (currentHour > 19 || (currentHour === 19 && currentMinute >= 0)) &&
+        (currentHour < 23 || (currentHour === 23 && currentMinute < 30))
+    ) {
         return 'dinner';
     }
     return null;
@@ -125,7 +145,7 @@ export const generateQrCode = asyncHandler(async (req, res) => {
         throw new Error(`Conflict: Student already checked in for ${mealType} today.`);
     }
 
-    if (getActiveMealType() !== mealType) {
+    if (getActiveMealType() !== mealType) { // This check relies on the updated getActiveMealType
         res.status(400);
         throw new Error(`Conflict: It's not the active time for ${mealType}. Please try during the correct meal window.`);
     }
