@@ -28,7 +28,9 @@ const messPlanServiceInstance = MessPlanService;
 const getActiveMealType = () => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes(); // मिनटों को भी प्राप्त करें
+    const currentMinute = now.getMinutes(); 
+    console.log('Server Date/Time (Full):', now.toISOString()); // ISO format for clarity
+    console.log('Server Time (Hour:Minute):', now.getHours(), ':', now.getMinutes());
 
     // अपने वास्तविक मेस टाइमिंग के अनुसार इन समयों को समायोजित करें
     // उदाहरण: Breakfast (7:00 AM - 10:30 AM), Lunch (12:00 PM - 3:30 PM), Dinner (7:00 PM - 11:30 PM)
