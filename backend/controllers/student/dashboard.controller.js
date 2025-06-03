@@ -28,35 +28,35 @@ const messPlanServiceInstance = MessPlanService;
 const getActiveMealType = () => {
     const now = new Date();
     const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const currentMinute = now.getMinutes(); // मिनटों को भी प्राप्त करें
 
-    // Define meal times with more precision (e.g., breakfast ends at 10:30 AM, lunch ends at 3:30 PM, dinner ends at 11:30 PM)
-    // You can adjust these times based on your actual mess schedule
-    // A small buffer could be added if needed, e.g., allowing for 15-30 mins after official end time for scanning
+    // अपने वास्तविक मेस टाइमिंग के अनुसार इन समयों को समायोजित करें
+    // उदाहरण: Breakfast (7:00 AM - 10:30 AM), Lunch (12:00 PM - 3:30 PM), Dinner (7:00 PM - 11:30 PM)
 
-    // Breakfast window: 7:00 AM to 10:30 AM (inclusive of 7:00, exclusive of 10:30)
+    // Breakfast window: 7:00 AM से 10:30 AM तक
     if (
         (currentHour > 7 || (currentHour === 7 && currentMinute >= 0)) &&
         (currentHour < 10 || (currentHour === 10 && currentMinute < 30))
     ) {
         return 'breakfast';
     }
-    // Lunch window: 12:00 PM to 3:30 PM (inclusive of 12:00, exclusive of 15:30)
+    // Lunch window: 12:00 PM से 3:30 PM तक
     else if (
         (currentHour > 12 || (currentHour === 12 && currentMinute >= 0)) &&
         (currentHour < 15 || (currentHour === 15 && currentMinute < 30))
     ) {
         return 'lunch';
     }
-    // Dinner window: 7:00 PM to 11:30 PM (inclusive of 19:00, exclusive of 23:30)
+    // Dinner window: 7:00 PM से 11:30 PM तक
     else if (
         (currentHour > 19 || (currentHour === 19 && currentMinute >= 0)) &&
         (currentHour < 23 || (currentHour === 23 && currentMinute < 30))
     ) {
         return 'dinner';
     }
-    return null;
+    return null; // यदि कोई सक्रिय भोजन नहीं है तो null रिटर्न करें
 };
+
 
 export const getActiveMessPlan = asyncHandler(async (req, res) => {
     // Directly use req.user.id for the authenticated student
