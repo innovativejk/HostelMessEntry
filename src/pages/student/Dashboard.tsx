@@ -59,37 +59,41 @@ interface ApiResponse<T> {
 }
 
 // Helper to determine meal window status
+// Updated to match backend logic from dashboard.controller.js
 const getMealWindowStatus = (mealType: 'breakfast' | 'lunch' | 'dinner'): 'past' | 'active' | 'future' => {
   const now = new Date();
+  let mealStartTime: Date;
   let mealEndTime: Date;
 
+  // Define meal start and end times based on dashboard.controller.js
   switch (mealType) {
     case 'breakfast':
-      mealEndTime = setMinutes(setHours(now, 10), 0); // Breakfast ends at 10:00 AM
+      mealStartTime = setMinutes(setHours(now, 7), 0);   // 7:00 AM
+      mealEndTime = setMinutes(setHours(now, 10), 30);  // 10:30 AM
       break;
     case 'lunch':
-      mealEndTime = setMinutes(setHours(now, 15), 0); // Lunch ends at 3:00 PM
+      mealStartTime = setMinutes(setHours(now, 12), 0);  // 12:00 PM
+      mealEndTime = setMinutes(setHours(now, 15), 30);  // 3:30 PM
       break;
     case 'dinner':
-      mealEndTime = setMinutes(setHours(now, 23), 0); // Dinner ends at 11:00 PM
+      mealStartTime = setMinutes(setHours(now, 19), 0);  // 7:00 PM
+      mealEndTime = setMinutes(setHours(now, 23), 30);  // 11:30 PM
       break;
     default:
-      return 'future'; // Should not happen
+      return 'future'; // Should not happen for defined meal types
   }
 
-  // A more robust check would involve meal start times as well:
-  let mealStartTime: Date;
-  if (mealType === 'breakfast') mealStartTime = setMinutes(setHours(now, 7), 0); // Breakfast starts at 7:00 AM
-  else if (mealType === 'lunch') mealStartTime = setMinutes(setHours(now, 12), 0); // Lunch starts at 12:00 PM
-  else if (mealType === 'dinner') mealStartTime = setMinutes(setHours(now, 19), 0); // Dinner starts at 7:00 PM
-  else mealStartTime = now; // Fallback
-
+  // Check if current time is before the meal start time
   if (isBefore(now, mealStartTime)) {
     return 'future';
-  } else if (isPast(mealEndTime)) {
+  }
+  // Check if current time is after the meal end time
+  else if (isPast(mealEndTime)) {
     return 'past';
-  } else {
-    return 'active'; // Within the window
+  }
+  // If not future and not past, it must be active
+  else {
+    return 'active';
   }
 };
 

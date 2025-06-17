@@ -99,7 +99,7 @@ const Homepage: React.FC = () => {
       {/* Navbar */}
       <nav className="bg-white shadow-lg py-4 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center sticky top-0 z-50 transition-all duration-300 ease-in-out">
         <Link to="/" className="text-3xl font-extrabold text-teal-700 flex items-center mb-4 md:mb-0">
-          <span className="text-4xl mr-2 animate-pulse-slow">🍲</span> संतोषी भोजनालय
+          <span className="text-4xl mr-2 animate-pulse-slow">🍲</span> संतुष्टि भोजनालय
         </Link>
         <div className="flex flex-wrap justify-center gap-4 md:gap-8 text-lg">
           <Link to="#features" className="text-gray-700 hover:text-teal-600 font-medium transition duration-300">विशेषताएँ</Link>
@@ -123,7 +123,7 @@ const Homepage: React.FC = () => {
         </div>
         <div className="max-w-5xl mx-auto relative z-10 animate-fade-in-up">
           <h1 className="text-5xl md:text-7xl font-extrabold mb-8 leading-tight drop-shadow-lg">
-            संतोषी भोजनालय में आपका स्वागत है
+            संतुष्टि भोजनालय में आपका स्वागत है
           </h1>
           <p className="text-xl md:text-2xl mb-12 opacity-90 font-light">
             भोजन को ट्रैक करें, QR कोड स्कैन करें, और अनुरोधों को आसानी से प्रबंधित करें।
@@ -255,7 +255,7 @@ const Homepage: React.FC = () => {
             क्या आप अपने मेस प्रबंधन को सरल बनाने के लिए तैयार हैं?
           </h2>
           <p className="text-xl md:text-2xl mb-12 opacity-90 font-light">
-            आज ही संतोषी भोजनालय से जुड़ें और अपने दैनिक मेस अनुभव को बेहतर बनाएं।
+            आज ही संतुष्टि भोजनालय से जुड़ें और अपने दैनिक मेस अनुभव को बेहतर बनाएं।
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
             <Link
@@ -279,7 +279,7 @@ const Homepage: React.FC = () => {
         <div className="max-w-6xl mx-auto text-center md:flex md:justify-between md:items-center">
           <div className="mb-6 md:mb-0">
             <Link to="/" className="text-3xl font-extrabold flex items-center justify-center md:justify-start">
-              <span className="text-4xl mr-2">🍲</span> संतोषी भोजनालय
+              <span className="text-4xl mr-2">🍲</span> संतुष्टि भोजनालय
             </Link>
             <p className="text-gray-400 mt-3 text-base">छात्रावास मेस प्रबंधन को सरल बनाना</p>
           </div>
@@ -291,7 +291,7 @@ const Homepage: React.FC = () => {
           </div>
         </div>
         <div className="mt-10 pt-8 border-t border-gray-700 text-center text-gray-500 text-sm">
-          © 2025 संतोषी मेस. सर्वाधिकार सुरक्षित।
+          © 2025 संतुष्टि मेस. सर्वाधिकार सुरक्षित।
         </div>
 
         {/* CSS Animations */}
